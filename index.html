@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Two For The King</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <main class="stage">
+      <header class="stage-header">
+        <div class="course-meta">
+          <span class="wordmark">Two For The King</span>
+          <span class="divider">/</span>
+          <span id="course-label" class="course-title">Course I of IV</span>
+        </div>
+        <div class="supplies" aria-label="Remaining supplies across all four courses">
+          <span class="supply-item">Silver pins <strong id="pin-count">2</strong></span>
+          <span class="supply-item">Emetic <strong id="emetic-count">1</strong></span>
+          <button id="sound-toggle" class="quiet-btn" type="button">Sound on</button>
+        </div>
+      </header>
+
+      <section class="guest-zone" aria-live="polite">
+        <h1 id="guest-name" class="guest-name">The Disgraced Physician</h1>
+        <p id="guest-trait" class="guest-trait">Cowardly — always hesitates when offered 1 clean and 1 poisoned goblet</p>
+        <p id="guest-line" class="guest-dialogue">"Six goblets for the King's table. Four are pure; two carry Twin-Numbness."</p>
+      </section>
+
+      <section class="tray-zone">
+        <div id="lacquer-tray" class="lacquer-tray" role="group" aria-label="Banquet tray">
+          <div id="cups-ring" class="cups-ring"></div>
+          <div class="crown-well" id="crown-well">
+            <span class="crown-label">For the King</span>
+            <div class="crown-slots">
+              <div class="crown-slot" id="crown-slot-0"></div>
+              <div class="crown-slot" id="crown-slot-1"></div>
+            </div>
+            <span class="crown-hint" id="crown-hint">Serve 2 at the end</span>
+          </div>
+        </div>
+      </section>
+
+      <footer class="action-bar">
+        <div class="mode-group" role="tablist" aria-label="Taster actions">
+          <button id="mode-split" class="mode-btn active" type="button" data-mode="split">Split <kbd>1</kbd></button>
+          <button id="mode-pin" class="mode-btn" type="button" data-mode="pin">Pin <kbd>2</kbd></button>
+          <button id="mode-sip" class="mode-btn" type="button" data-mode="sip">Sip <kbd>3</kbd></button>
+          <button id="mode-crown" class="mode-btn" type="button" data-mode="crown">Serve King <kbd>4</kbd></button>
+        </div>
+        <div class="commit-group">
+          <span id="selection-prompt" class="selection-prompt">Pick 2 goblets — he must drink one</span>
+          <button id="commit-btn" class="primary-btn" type="button" disabled>Offer split</button>
+        </div>
+      </footer>
+    </main>
+
+    <aside class="ledger-sidebar">
+      <div class="sidebar-block">
+        <div class="block-header">
+          <span class="block-title">Royal banquet</span>
+          <span id="step-counter" class="mono-meta">Step 0 of 3</span>
+        </div>
+        <div class="stat-strip">
+          <div class="stat-cell">
+            <span class="stat-label">Goblets</span>
+            <span id="stat-total" class="stat-val">6</span>
+          </div>
+          <div class="stat-cell">
+            <span class="stat-label">Poisoned</span>
+            <span id="stat-poison" class="stat-val accent-text">2</span>
+          </div>
+          <div class="stat-cell">
+            <span class="stat-label">King poisoned</span>
+            <span id="stat-slain" class="stat-val">0 / 4</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-block rules-compact">
+        <span class="block-title">Two ways to survive</span>
+        <ul class="law-list">
+          <li><span>Serve 2 pure</span><span class="positive-text">Loyal: King unharmed</span></li>
+          <li><span>Serve 2 poison</span><span class="accent-text">Treason: silent numb dose</span></li>
+          <li><span>Serve 1 + 1</span><span class="negative-text">Half-dose pains — executed</span></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-block ledger-block">
+        <div class="block-header">
+          <span class="block-title">Tasting ledger</span>
+          <span class="mono-meta">Right-click cup to note</span>
+        </div>
+        <ol id="ledger-list" class="ledger-list">
+          <li class="ledger-empty">Left-click goblets to act; right-click to mark pure or poison</li>
+        </ol>
+      </div>
+
+      <div class="sidebar-footer">
+        <button id="retry-course-btn" class="quiet-btn" type="button">Retry course <kbd>R</kbd></button>
+        <button id="new-banquet-btn" class="quiet-btn" type="button">New banquet</button>
+      </div>
+    </aside>
+  </div>
+
+  <div id="outcome-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="outcome-title">
+    <div class="modal-card">
+      <span id="outcome-tag" class="outcome-tag">Course complete</span>
+      <h2 id="outcome-title" class="outcome-title">The King drains both goblets</h2>
+      <p id="outcome-body" class="outcome-body"></p>
+      <div id="outcome-truth" class="outcome-truth"></div>
+      <div class="modal-actions">
+        <button id="modal-primary-btn" class="primary-btn" type="button">Next course</button>
+        <button id="modal-secondary-btn" class="quiet-btn hidden" type="button">New banquet</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
