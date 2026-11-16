@@ -496,6 +496,7 @@ kbd {
   color: var(--text-secondary);
   font-family: var(--font-sans);
   font-size: 12px;
+  text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
   display: inline-flex;

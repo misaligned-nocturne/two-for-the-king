@@ -148,6 +148,7 @@
     outcomeTruth: document.getElementById("outcome-truth"),
     shareCard: document.getElementById("share-card"),
     copyRecordBtn: document.getElementById("copy-record-btn"),
+    postRecordLink: document.getElementById("post-record-link"),
     modalPrimaryBtn: document.getElementById("modal-primary-btn"),
     modalSecondaryBtn: document.getElementById("modal-secondary-btn"),
   };
@@ -608,6 +609,7 @@
       el.shareCard.classList.remove("hidden");
       el.copyRecordBtn.textContent = "Copy record";
       el.copyRecordBtn.classList.remove("hidden");
+      if (el.postRecordLink) el.postRecordLink.classList.remove("hidden");
       el.copyRecordBtn.onclick = async () => {
         try {
           await navigator.clipboard.writeText(shareText);
@@ -627,6 +629,7 @@
     } else {
       el.shareCard.classList.add("hidden");
       el.copyRecordBtn.classList.add("hidden");
+      if (el.postRecordLink) el.postRecordLink.classList.add("hidden");
     }
 
     if (canAdvance) {
