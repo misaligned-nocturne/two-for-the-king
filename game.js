@@ -109,7 +109,8 @@
     pinsLeft: 2,
     emeticLeft: 1,
     dosesInKing: 0,
-    checkpoint: { pinsLeft: 2, emeticLeft: 1, dosesInKing: 0 },
+    history: [],
+    checkpoint: { pinsLeft: 2, emeticLeft: 1, dosesInKing: 0, history: [] },
   };
 
   let round = null;
@@ -145,6 +146,8 @@
     outcomeTitle: document.getElementById("outcome-title"),
     outcomeBody: document.getElementById("outcome-body"),
     outcomeTruth: document.getElementById("outcome-truth"),
+    shareCard: document.getElementById("share-card"),
+    copyRecordBtn: document.getElementById("copy-record-btn"),
     modalPrimaryBtn: document.getElementById("modal-primary-btn"),
     modalSecondaryBtn: document.getElementById("modal-secondary-btn"),
   };
@@ -167,6 +170,7 @@
     campaign.pinsLeft = 2;
     campaign.emeticLeft = 1;
     campaign.dosesInKing = 0;
+    campaign.history = [];
     saveCheckpoint();
     initCourse();
   }
@@ -176,6 +180,7 @@
       pinsLeft: campaign.pinsLeft,
       emeticLeft: campaign.emeticLeft,
       dosesInKing: campaign.dosesInKing,
+      history: campaign.history.map((h) => ({ ...h })),
     };
   }
 
@@ -183,6 +188,7 @@
     campaign.pinsLeft = campaign.checkpoint.pinsLeft;
     campaign.emeticLeft = campaign.checkpoint.emeticLeft;
     campaign.dosesInKing = campaign.checkpoint.dosesInKing;
+    campaign.history = campaign.checkpoint.history.map((h) => ({ ...h }));
     initCourse();
   }
 
@@ -196,6 +202,8 @@
       marks: Array(cfg.cups).fill(0), // 0: none, 1: pure? (○), 2: poison? (×)
       lastReturnedCup: null,
       step: 0,
+      pinsUsed: 0,
+      emeticUsed: 0,
       guestChoked: false,
       composureLeft: cfg.composureCharges,
       falseTremorLeft: cfg.falseTremorCharges,
@@ -366,6 +374,7 @@
 
   function doPin(c) {
     campaign.pinsLeft -= 1;
+    round.pinsUsed += 1;
     round.step += 1;
     round.selected = [];
     sfx.pin();
@@ -413,6 +422,7 @@
       round.known[c] = "poison";
       if (campaign.emeticLeft > 0) {
         campaign.emeticLeft -= 1;
+        round.emeticUsed += 1;
         sfx.danger();
         round.ledger.push({
           step: round.step,
@@ -457,6 +467,15 @@
       return;
     }
 
+    const courseRecord = {
+      roman: round.cfg.roman,
+      poisonedKing: totalPoison === 2,
+      steps: round.step,
+      maxSteps: round.cfg.maxSteps,
+      pinsUsed: round.pinsUsed,
+      emeticUsed: round.emeticUsed,
+    };
+
     const isFinalCourse = campaign.courseIdx === COURSES.length - 1;
 
     if (!isFinalCourse) {
@@ -469,6 +488,7 @@
           canAdvance: true,
           isEnding: false,
           doseDelta: 0,
+          courseRecord,
         });
       } else {
         showModal({
@@ -478,15 +498,33 @@
           canAdvance: true,
           isEnding: false,
           doseDelta: 1,
+          courseRecord,
         });
       }
     } else {
       sfx.bell();
-      resolveFinalEnding(totalPoison, a, b);
+      resolveFinalEnding(totalPoison, a, b, [...campaign.history, courseRecord]);
     }
   }
 
-  function resolveFinalEnding(finalPoisonCount, a, b) {
+  function formatShareRecord(shortEndingLabel, history) {
+    const lines = [`Two For The King — ${shortEndingLabel}`];
+    history.forEach((h) => {
+      const romanCol = h.roman.padEnd(3, " ");
+      const verdict = h.poisonedKing ? "[Poison]" : "[Pure]  ";
+      const extras = [];
+      if (h.pinsUsed > 0) extras.push(`${h.pinsUsed} pin${h.pinsUsed > 1 ? "s" : ""}`);
+      if (h.emeticUsed > 0) extras.push("emetic");
+      const meta = extras.length > 0
+        ? `${h.steps}/${h.maxSteps} steps · ${extras.join(", ")}`
+        : `${h.steps}/${h.maxSteps} steps`;
+      lines.push(`${romanCol} ${verdict} ${meta}`);
+    });
+    lines.push("https://misaligned-nocturne.github.io/two-for-the-king/");
+    return lines.join("\n");
+  }
+
+  function resolveFinalEnding(finalPoisonCount, a, b, fullHistory) {
     const totalDoses = campaign.dosesInKing + (finalPoisonCount === 2 ? 1 : 0);
 
     if (totalDoses === 0) {
@@ -497,6 +535,7 @@
         canAdvance: false,
         isEnding: true,
         overrideKingCount: 0,
+        shareText: formatShareRecord("Ending 1/5 · The Hound's Reprieve", fullHistory),
       });
     } else if (finalPoisonCount === 0 && totalDoses > 0) {
       showModal({
@@ -506,6 +545,7 @@
         canAdvance: false,
         isEnding: true,
         overrideKingCount: totalDoses,
+        shareText: formatShareRecord("Ending 2/5 · Half-Hearted Treason", fullHistory),
       });
     } else if (finalPoisonCount === 2 && totalDoses === 1) {
       showModal({
@@ -515,6 +555,7 @@
         canAdvance: false,
         isEnding: true,
         overrideKingCount: 1,
+        shareText: formatShareRecord("Ending 3/5 · Late Venom", fullHistory),
       });
     } else if (finalPoisonCount === 2 && totalDoses < 4) {
       showModal({
@@ -524,6 +565,7 @@
         canAdvance: false,
         isEnding: true,
         overrideKingCount: totalDoses,
+        shareText: formatShareRecord("Ending 4/5 · Blood in the Snow", fullHistory),
       });
     } else {
       showModal({
@@ -533,11 +575,22 @@
         canAdvance: false,
         isEnding: true,
         overrideKingCount: 4,
+        shareText: formatShareRecord("Ending 5/5 · Perfect Regicide", fullHistory),
       });
     }
   }
 
-  function showModal({ tag, title, body, canAdvance, isEnding, doseDelta = 0, overrideKingCount = null }) {
+  function showModal({
+    tag,
+    title,
+    body,
+    canAdvance,
+    isEnding,
+    doseDelta = 0,
+    overrideKingCount = null,
+    courseRecord = null,
+    shareText = null,
+  }) {
     if (overrideKingCount !== null) {
       el.statSlain.textContent = `${overrideKingCount} / 4`;
     }
@@ -550,9 +603,36 @@
       .join("  ·  ");
     el.outcomeTruth.textContent = `Tray truth: ${poisonList}`;
 
+    if (isEnding && shareText) {
+      el.shareCard.textContent = shareText;
+      el.shareCard.classList.remove("hidden");
+      el.copyRecordBtn.textContent = "Copy record";
+      el.copyRecordBtn.classList.remove("hidden");
+      el.copyRecordBtn.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(shareText);
+        } catch {
+          const ta = document.createElement("textarea");
+          ta.value = shareText;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+        }
+        el.copyRecordBtn.textContent = "Copied";
+        setTimeout(() => {
+          if (el.copyRecordBtn) el.copyRecordBtn.textContent = "Copy record";
+        }, 1800);
+      };
+    } else {
+      el.shareCard.classList.add("hidden");
+      el.copyRecordBtn.classList.add("hidden");
+    }
+
     if (canAdvance) {
       el.modalPrimaryBtn.textContent = "Next course";
       el.modalPrimaryBtn.onclick = () => {
+        if (courseRecord) campaign.history.push(courseRecord);
         campaign.dosesInKing += doseDelta;
         campaign.courseIdx += 1;
         saveCheckpoint();
@@ -614,7 +694,7 @@
       slot.setAttribute("role", "button");
       slot.title = round.drained[i]
         ? `Goblet #${i + 1} (drained)`
-        : `Goblet #${i + 1} — Left-click to select, Right-click to note`;
+        : `Goblet #${i + 1} — Tap to select; right-click, long-press, or tap corner dot to note`;
 
       if (round.drained[i]) slot.classList.add("is-empty");
       if (round.selected.includes(i)) slot.classList.add("is-selected");
@@ -652,6 +732,7 @@
       if (!round.drained[i]) {
         const mark = document.createElement("span");
         mark.className = "cup-mark";
+        mark.title = "Cycle note (Pure? / Poison? / Clear)";
         if (round.known[i] === "clean") {
           mark.textContent = "✓";
         } else if (round.known[i] === "poison") {
@@ -663,10 +744,46 @@
         } else {
           mark.textContent = "·";
         }
+        mark.addEventListener("touchstart", (ev) => ev.stopPropagation(), { passive: true });
+        mark.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          cycleCupMark(i, ev);
+        });
         slot.appendChild(mark);
       }
 
-      slot.addEventListener("click", () => toggleCupSelection(i));
+      let pressTimer = null;
+      let longPressed = false;
+      slot.addEventListener(
+        "touchstart",
+        () => {
+          longPressed = false;
+          if (round.over || round.drained[i] || round.known[i] !== null) return;
+          pressTimer = setTimeout(() => {
+            longPressed = true;
+            cycleCupMark(i, null);
+          }, 360);
+        },
+        { passive: true }
+      );
+      const clearPress = () => {
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+        }
+      };
+      slot.addEventListener("touchend", clearPress);
+      slot.addEventListener("touchcancel", clearPress);
+      slot.addEventListener("touchmove", clearPress, { passive: true });
+
+      slot.addEventListener("click", (ev) => {
+        if (longPressed) {
+          longPressed = false;
+          ev.preventDefault();
+          return;
+        }
+        toggleCupSelection(i);
+      });
       slot.addEventListener("contextmenu", (ev) => cycleCupMark(i, ev));
       slot.addEventListener("keydown", (ev) => {
         if (ev.key === "Enter" || ev.key === " ") {
@@ -743,7 +860,7 @@
     if (round.ledger.length === 0) {
       const empty = document.createElement("li");
       empty.className = "ledger-empty";
-      empty.textContent = "Left-click goblets to act; right-click to mark pure or poison";
+      empty.textContent = "Tap goblets to act; right-click or tap corner dot to mark pure or poison";
       el.ledgerList.appendChild(empty);
       return;
     }

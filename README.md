@@ -18,7 +18,7 @@ You have **3 actions** per course to test the tray and read the courtier across 
   - **2 Poisoned**: A double-dose of Twin-Numbness numbs every nerve on contact—the King feels nothing until midnight stops his heart (*Treason path*).
   - **1 Pure + 1 Poisoned**: A half-dose fails to numb the throat. The King spits the bitter wine in agony, and the guards take your head on the spot.
 
-Right-click any goblet to mark private notes (`Pure?` / `Poison?`). Press `R` to retry the current course.
+Right-click, long-press, or tap a goblet's corner dot to mark private notes (`Pure?` / `Poison?`). Press `R` to retry the current course.
 
 ## Credits
 
