@@ -982,10 +982,18 @@
     return h.poisonedKing || h.verdict === "poison" ? "[Poison]" : "[Pure]  ";
   }
 
+  function verdictGlyphForRecord(h) {
+    if (h.verdict === "half" || h.verdict === "fatal") return "🟥";
+    return h.poisonedKing || h.verdict === "poison" ? "🟪" : "🟩";
+  }
+
   function formatShareRecord(shortEndingLabel, history) {
-    const lines = isDaily()
-      ? [`Two For The King · Daily ${campaign.dailyDate}`, shortEndingLabel]
-      : [`Two For The King — ${shortEndingLabel}`];
+    const strip = history.map(verdictGlyphForRecord).join("");
+    const header = isDaily()
+      ? `Two For The King · Daily ${campaign.dailyDate}`
+      : "Two For The King";
+    const summaryLine = strip ? `${strip}  ${shortEndingLabel}` : shortEndingLabel;
+    const lines = [header, summaryLine];
     history.forEach((h) => {
       const romanCol = h.roman.padEnd(3, " ");
       const verdict = verdictTagForRecord(h);
