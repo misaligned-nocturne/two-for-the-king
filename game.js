@@ -162,6 +162,70 @@
     storageSet(dailyProgressKey(dateStr), JSON.stringify(snapshot));
   }
 
+  const DAILY_STATS_KEY = "tfk_daily_stats_v1";
+
+  function loadDailyStats() {
+    const raw = storageGet(DAILY_STATS_KEY);
+    if (!raw) return { entries: {} };
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed.entries === "object" && parsed.entries ? parsed : { entries: {} };
+    } catch {
+      return { entries: {} };
+    }
+  }
+
+  function recordDailyStat(dateStr, isRegicide) {
+    const stats = loadDailyStats();
+    if (!stats.entries[dateStr]) {
+      stats.entries[dateStr] = { regicide: Boolean(isRegicide) };
+      storageSet(DAILY_STATS_KEY, JSON.stringify(stats));
+    }
+    return computeDailySummary(stats, dateStr);
+  }
+
+  function prevUtcDate(dateStr) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d - 1));
+    return getUtcDateString(dt);
+  }
+
+  function computeDailySummary(stats, anchorDateStr) {
+    const entries = stats.entries || {};
+    const dates = Object.keys(entries).sort();
+    const played = dates.length;
+    const regicides = dates.filter((k) => entries[k] && entries[k].regicide).length;
+
+    let streak = 0;
+    let cursor = anchorDateStr;
+    if (!entries[cursor]) {
+      cursor = prevUtcDate(cursor);
+    }
+    while (entries[cursor]) {
+      streak += 1;
+      cursor = prevUtcDate(cursor);
+    }
+    return { played, regicides, streak };
+  }
+
+  let countdownTimer = null;
+
+  function stopDailyCountdown() {
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+    }
+  }
+
+  function formatTimeUntilNextUtcDay(now = new Date()) {
+    const nextMidnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0);
+    const diffSec = Math.max(0, Math.floor((nextMidnight - now.getTime()) / 1000));
+    const h = String(Math.floor(diffSec / 3600)).padStart(2, "0");
+    const m = String(Math.floor((diffSec % 3600) / 60)).padStart(2, "0");
+    const s = String(diffSec % 60).padStart(2, "0");
+    return `${h}:${m}:${s}`;
+  }
+
   // Tactile Web Audio synthesizer
   let audioCtx = null;
   let soundEnabled = true;
@@ -259,7 +323,12 @@
     outcomeTitle: document.getElementById("outcome-title"),
     outcomeBody: document.getElementById("outcome-body"),
     outcomeTruth: document.getElementById("outcome-truth"),
+    dailyStatsStrip: document.getElementById("daily-stats-strip"),
+    dailyStatPlayed: document.getElementById("daily-stat-played"),
+    dailyStatRegicides: document.getElementById("daily-stat-regicides"),
+    dailyStatStreak: document.getElementById("daily-stat-streak"),
     shareCard: document.getElementById("share-card"),
+    dailyCountdown: document.getElementById("daily-countdown"),
     copyRecordBtn: document.getElementById("copy-record-btn"),
     postRecordLink: document.getElementById("post-record-link"),
     modalPrimaryBtn: document.getElementById("modal-primary-btn"),
@@ -367,6 +436,7 @@
         selected: [],
         ledger: [],
         over: true,
+        cue: null,
       };
       el.guestLine.textContent = `Daily Banquet ${campaign.dailyDate} complete.`;
       renderAll();
@@ -453,7 +523,9 @@
       selected: [],
       ledger: [],
       over: false,
+      cue: null,
     };
+    stopDailyCountdown();
     el.modal.classList.add("hidden");
     el.guestLine.textContent = cfg.introLine;
     snapshotCurrentDaily();
@@ -479,7 +551,9 @@
       selected: [],
       ledger: Array.isArray(savedRound.ledger) ? savedRound.ledger : [],
       over: false,
+      cue: null,
     };
+    stopDailyCountdown();
     autoSelectValidModeIfNeeded();
     el.modal.classList.add("hidden");
     el.guestLine.textContent = savedRound.guestLine || cfg.introLine;
@@ -522,6 +596,7 @@
 
   function toggleCupSelection(idx) {
     if (round.over || round.drained[idx]) return;
+    round.cue = null;
     sfx.clink();
     const need = requiredCountForMode(round.mode);
     const pos = round.selected.indexOf(idx);
@@ -640,6 +715,11 @@
           : `Drank #${drank + 1} (empty) · Returned #${returned + 1}`,
     });
 
+    round.cue = {
+      drainedIdx: drank,
+      returnedIdx: tag === "Choked" ? null : returned,
+      reaction: tag === "Choked" ? "choked" : tag === "Hesitated" ? "hesitate" : "calm",
+    };
     el.guestLine.textContent = dialogue;
     autoSelectValidModeIfNeeded();
     snapshotCurrentDaily();
@@ -671,6 +751,7 @@
       ? `Under your sleeve, the silver pin emerges dark from #${c + 1}.`
       : `The silver pin comes out bright. Goblet #${c + 1} is pure.`;
 
+    round.cue = { testedIdx: c, reaction: isPoison ? "poison" : "clean" };
     autoSelectValidModeIfNeeded();
     snapshotCurrentDaily();
     renderAll();
@@ -698,6 +779,7 @@
         tagClass: "tag-clean",
         detail: `Tasted pure · Goblet #${c + 1} remains on tray`,
       });
+      round.cue = { testedIdx: c, reaction: "clean" };
       el.guestLine.textContent = `Cool wine on your tongue, no numbness. Goblet #${c + 1} is pure.`;
       autoSelectValidModeIfNeeded();
       snapshotCurrentDaily();
@@ -715,6 +797,7 @@
           tagClass: "tag-poison",
           detail: `Numbness in #${c + 1} · Saved by your only emetic`,
         });
+        round.cue = { testedIdx: c, reaction: "poison" };
         el.guestLine.textContent = `Your lips go ice-numb on #${c + 1}. You swallow your secret emetic — #${c + 1} is poisoned.`;
         autoSelectValidModeIfNeeded();
         snapshotCurrentDaily();
@@ -742,6 +825,7 @@
           };
           const fullHistory = [...campaign.history, fatalRecord];
           const shareText = formatShareRecord(`Fatal tasting on Course ${round.cfg.roman}`, fullHistory);
+          recordDailyStat(campaign.dailyDate, false);
           saveDailyDone(campaign.dailyDate, {
             tag: modalTag,
             title: modalTitle,
@@ -804,6 +888,7 @@
         };
         const fullHistory = [...campaign.history, fatalRecord];
         const shareText = formatShareRecord(`Executed on Course ${round.cfg.roman}`, fullHistory);
+        recordDailyStat(campaign.dailyDate, false);
         saveDailyDone(campaign.dailyDate, {
           tag: modalTag,
           title: modalTitle,
@@ -953,6 +1038,7 @@
     const shareText = formatShareRecord(shortLabel, fullHistory);
 
     if (isDaily()) {
+      recordDailyStat(campaign.dailyDate, finalPoisonCount === 2 && totalDoses >= 2);
       saveDailyDone(campaign.dailyDate, {
         tag: displayTag,
         title,
@@ -998,6 +1084,31 @@
     el.outcomeTitle.textContent = title;
     el.outcomeBody.textContent = body;
     el.outcomeTruth.textContent = truthOverride || buildTruthText(round.poisons);
+
+    stopDailyCountdown();
+    if (isEnding && isDaily() && el.dailyStatsStrip) {
+      const summary = computeDailySummary(loadDailyStats(), campaign.dailyDate);
+      el.dailyStatPlayed.textContent = String(summary.played);
+      el.dailyStatRegicides.textContent = String(summary.regicides);
+      el.dailyStatStreak.textContent = String(summary.streak);
+      el.dailyStatsStrip.classList.remove("hidden");
+      if (el.dailyCountdown) {
+        if (campaign.dailyDate === getUtcDateString()) {
+          const tick = () => {
+            el.dailyCountdown.textContent = `Next Daily Banquet in ${formatTimeUntilNextUtcDay()} UTC`;
+          };
+          tick();
+          el.dailyCountdown.classList.remove("hidden");
+          countdownTimer = setInterval(tick, 1000);
+        } else {
+          el.dailyCountdown.textContent = `Archive banquet · ${campaign.dailyDate} UTC`;
+          el.dailyCountdown.classList.remove("hidden");
+        }
+      }
+    } else {
+      if (el.dailyStatsStrip) el.dailyStatsStrip.classList.add("hidden");
+      if (el.dailyCountdown) el.dailyCountdown.classList.add("hidden");
+    }
 
     if (isEnding && shareText) {
       el.shareCard.textContent = shareText;
@@ -1130,6 +1241,17 @@
       if (round.known[i] === "poison") slot.classList.add("known-poison");
       if (round.known[i] === null && round.marks[i] === 1) slot.classList.add("note-clean");
       if (round.known[i] === null && round.marks[i] === 2) slot.classList.add("note-poison");
+      if (round.cue) {
+        if (round.cue.drainedIdx === i) {
+          slot.classList.add(round.cue.reaction === "choked" ? "cue-tested-poison" : "cue-drank");
+        }
+        if (round.cue.returnedIdx === i) {
+          slot.classList.add(round.cue.reaction === "hesitate" ? "cue-returned-hesitate" : "cue-returned-calm");
+        }
+        if (round.cue.testedIdx === i) {
+          slot.classList.add(round.cue.reaction === "poison" ? "cue-tested-poison" : "cue-tested-clean");
+        }
+      }
 
       const rim = document.createElement("div");
       rim.className = "cup-rim";

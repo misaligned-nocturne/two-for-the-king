@@ -857,3 +857,71 @@ kbd {
     justify-content: space-between;
   }
 }
+
+/* Tactile Action Cues on the Lacquer Tray */
+@keyframes cup-pulse-calm {
+  0% { box-shadow: 0 0 0 0 rgba(239, 233, 222, 0.55); border-color: rgba(239, 233, 222, 0.72); }
+  100% { box-shadow: 0 0 0 12px rgba(239, 233, 222, 0); }
+}
+
+@keyframes cup-tremor {
+  0% { transform: translateX(0); box-shadow: 0 0 0 0 rgba(201, 162, 85, 0.65); border-color: var(--accent); }
+  18% { transform: translateX(-2.5px); }
+  36% { transform: translateX(2.5px); }
+  54% { transform: translateX(-2px); }
+  72% { transform: translateX(1.5px); }
+  100% { transform: translateX(0); box-shadow: 0 0 0 14px rgba(201, 162, 85, 0); }
+}
+
+@keyframes cup-pulse-clean {
+  0% { box-shadow: 0 0 0 0 rgba(76, 195, 138, 0.58); }
+  100% { box-shadow: 0 0 0 12px rgba(76, 195, 138, 0); }
+}
+
+@keyframes cup-pulse-danger {
+  0% { box-shadow: 0 0 0 0 rgba(229, 72, 77, 0.68); }
+  100% { box-shadow: 0 0 0 14px rgba(229, 72, 77, 0); }
+}
+
+@keyframes cup-drain {
+  0% { transform: scale(1.04); border-color: rgba(239, 233, 222, 0.35); }
+  100% { transform: scale(1); }
+}
+
+.cup-slot.cue-drank {
+  animation: cup-drain 420ms var(--ease);
+}
+
+.cup-slot.cue-returned-calm {
+  animation: cup-pulse-calm 900ms var(--ease);
+}
+
+.cup-slot.cue-returned-hesitate {
+  animation: cup-tremor 900ms var(--ease);
+}
+
+.cup-slot.cue-tested-clean {
+  animation: cup-pulse-clean 850ms var(--ease);
+}
+
+.cup-slot.cue-tested-poison {
+  animation: cup-pulse-danger 900ms var(--ease);
+}
+
+.daily-countdown {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cup-slot.cue-drank,
+  .cup-slot.cue-returned-calm,
+  .cup-slot.cue-returned-hesitate,
+  .cup-slot.cue-tested-clean,
+  .cup-slot.cue-tested-poison {
+    animation: none;
+  }
+}
