@@ -925,3 +925,7 @@ kbd {
     animation: none;
   }
 }
+
+.cup-slot, .cup-mark, .mode-btn, .primary-btn, .quiet-btn, .switch-btn {
+  touch-action: manipulation;
+}

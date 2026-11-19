@@ -1179,7 +1179,9 @@
     const dailyDone = Boolean(loadDailyDone(campaign.dailyDate));
 
     el.banquetPracticeBtn.classList.toggle("active", !daily);
+    el.banquetPracticeBtn.setAttribute("aria-pressed", String(!daily));
     el.banquetDailyBtn.classList.toggle("active", daily);
+    el.banquetDailyBtn.setAttribute("aria-pressed", String(daily));
     el.banquetDailyBtn.textContent = dailyDone ? "Daily ✓" : "Daily";
     el.banquetDailyBtn.title = dailyDone
       ? `Daily Banquet ${campaign.dailyDate} complete — click to view your record`
@@ -1454,9 +1456,11 @@
   el.retryCourseBtn.addEventListener("click", retryCurrentCourse);
   el.newBanquetBtn.addEventListener("click", startNewBanquet);
 
+  el.soundToggle.setAttribute("aria-pressed", String(soundEnabled));
   el.soundToggle.addEventListener("click", () => {
     soundEnabled = !soundEnabled;
     el.soundToggle.textContent = soundEnabled ? "Sound on" : "Sound off";
+    el.soundToggle.setAttribute("aria-pressed", String(soundEnabled));
     if (soundEnabled) sfx.clink();
   });
 
@@ -1485,6 +1489,14 @@
       setMode("sip");
     } else if (k === "4") {
       setMode("crown");
+    } else if (k === "escape") {
+      if (round && !round.over && round.selected.length > 0) {
+        ev.preventDefault();
+        round.selected = [];
+        renderCups();
+        renderCrownWell();
+        renderControls();
+      }
     } else if (k === "enter") {
       if (!el.commitBtn.disabled) {
         ev.preventDefault();
