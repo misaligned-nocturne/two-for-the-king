@@ -998,7 +998,10 @@
           : `${h.steps}/${h.maxSteps} steps`;
       lines.push(`${romanCol} ${verdict} ${meta}`);
     });
-    lines.push("https://misaligned-nocturne.github.io/two-for-the-king/");
+    const shareUrl = isDaily()
+      ? `https://misaligned-nocturne.github.io/two-for-the-king/?daily=${campaign.dailyDate}`
+      : "https://misaligned-nocturne.github.io/two-for-the-king/";
+    lines.push(shareUrl);
     return lines.join("\n");
   }
 
