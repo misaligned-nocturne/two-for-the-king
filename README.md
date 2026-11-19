@@ -20,7 +20,15 @@ When ready—or once your test steps run out—**Serve King (`4`)** by placing 2
 - **2 Poisoned (*Treason*)** — A double-dose of Twin-Numbness numbs every nerve on contact. You advance undetected; the more courses you poison before midnight, the cleaner your regicide.
 - **1 Pure + 1 Poisoned** — A half-dose fails to numb the throat. The King spits the bitter wine in agony, and the guards take your head on the spot.
 
-Right-click, long-press, or tap a goblet's corner dot to mark private notes (`Pure?` / `Poison?`). Press `R` to retry the current course.
+Right-click, long-press, or tap a goblet's corner dot to mark private notes (`Pure?` / `Poison?`). Press `R` in Practice mode to retry the current course.
+
+## Daily Banquet
+
+Switch to **Daily** in the top bar (or open `?daily`) for a deterministic seeded four-course banquet shared by every player on the same UTC date:
+
+- All four trays and split tiebreaks are seeded from the UTC date (`YYYY-MM-DD`).
+- One official attempt per day (progress is saved mid-run; no course retries).
+- Ends with a spoiler-free share card for both endings and mid-banquet executions.
 
 ## Feedback
 

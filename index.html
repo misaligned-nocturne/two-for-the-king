@@ -26,10 +26,14 @@
         <div class="course-meta">
           <span class="wordmark">Two For The King</span>
           <span class="divider">/</span>
-          <span id="course-label" class="course-title">Course I of IV</span>
+          <span id="course-label" class="course-title">Course I · Aperitif</span>
         </div>
-        <div class="supplies" aria-label="Remaining supplies across all four courses">
-          <span class="supply-item">Silver pins <strong id="pin-count">2</strong></span>
+        <div class="supplies" aria-label="Mode and remaining supplies across all four courses">
+          <div class="banquet-switch" role="group" aria-label="Banquet mode">
+            <button id="banquet-practice-btn" class="switch-btn active" type="button">Practice</button>
+            <button id="banquet-daily-btn" class="switch-btn is-daily" type="button">Daily</button>
+          </div>
+          <span class="supply-item">Pins <strong id="pin-count">2</strong></span>
           <span class="supply-item">Emetic <strong id="emetic-count">1</strong></span>
           <button id="sound-toggle" class="quiet-btn" type="button">Sound on</button>
         </div>
@@ -72,7 +76,7 @@
     <aside class="ledger-sidebar">
       <div class="sidebar-block">
         <div class="block-header">
-          <span class="block-title">Royal banquet</span>
+          <span id="banquet-title" class="block-title">Royal banquet</span>
           <span id="step-counter" class="mono-meta">Step 0 of 3</span>
         </div>
         <div class="stat-strip">
